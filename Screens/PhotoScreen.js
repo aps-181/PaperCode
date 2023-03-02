@@ -10,7 +10,9 @@ const PhotoScreen = () => {
     let cameraRef = useRef();
     const [hasCameraPermission, setHasCameraPermission] = useState()
     const [hasMediaLibraryPermission, setHasMediaLibraryPermission] = useState()
+    const [isCameraReady, setIsCameraReady] = useState(false);
     const [photo, setPhoto] = useState();
+    const [zoom, setZoom] = useState(0);
 
     useEffect(() => {
         (async () => {
@@ -27,15 +29,21 @@ const PhotoScreen = () => {
         return <Text>Permission for camera not granted. Please change in settings</Text>
     }
 
+    const onCameraReady = () => {
+        setIsCameraReady(true);
+    };
+
     let takePic = async () => {
         let options = {
             quality: 1,
             base64: true,
             exif: false
         }
-
-        let newPhoto = await cameraRef.current.takePictureAync(options)
-        setPhoto(newPhoto)
+        console.log(cameraRef.current)
+        if (cameraRef) {
+            let newPhoto = await cameraRef.current.takePictureAync(options)
+            setPhoto(newPhoto)
+        }
     }
 
     if (photo) {
@@ -62,9 +70,12 @@ const PhotoScreen = () => {
     }
 
     return (
-        <Camera style={styles.container} ref={cameraRef}>
+        <Camera style={styles.container} ref={cameraRef} ratio={"16:9"} zoom={zoom} onCameraReady={onCameraReady}>
             <View style={styles.butttonContainer}>
                 <Button title="Take Pic" onPress={takePic} />
+                <Button title="Zoom in" onPress={() => { if (zoom <= 0.9) setZoom(zoom + 0.1) }} />
+                <Button title="Zoom out" onPress={() => { if (zoom >= 0.1) setZoom(zoom - 0.1) }} />
+
             </View>
         </Camera>
     )
