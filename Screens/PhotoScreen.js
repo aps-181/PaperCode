@@ -1,83 +1,135 @@
-import { StyleSheet, SafeAreaView, Button, Image, Text, View } from 'react-native'
-import React from 'react'
-import { Camera } from 'expo-camera'
-import { shareAsync } from 'expo-sharing'
+import { StyleSheet, Text, View, Image } from 'react-native'
+import React, { useState, useEffect, useRef } from 'react'
+import { Camera, CameraType } from 'expo-camera';
 import * as MediaLibrary from 'expo-media-library'
-import { useEffect, useRef, useState } from 'react'
+import Button from '../Components/Button';
+import { API_KEY } from '@env';
 
-const PhotoScreen = () => {
+const PhotoScreen = ({ navigation }) => {
 
-    let cameraRef = useRef();
-    const [hasCameraPermission, setHasCameraPermission] = useState()
-    const [hasMediaLibraryPermission, setHasMediaLibraryPermission] = useState()
-    const [isCameraReady, setIsCameraReady] = useState(false);
-    const [photo, setPhoto] = useState();
-    const [zoom, setZoom] = useState(0);
+    const [hasCameraPermission, setHasCameraPermission] = useState(null);
+    const [image, setImage] = useState(null)
+    const [type, setType] = useState(Camera.Constants.Type.back)
+    const [flash, setFlash] = useState(Camera.Constants.FlashMode.off)
+    const cameraRef = useRef(null)
 
     useEffect(() => {
         (async () => {
-            const cameraPermission = await Camera.requestCameraPermissionsAsync()
-            const mediaLibraryPermission = await MediaLibrary.requestPermissionsAsync()
-            setHasCameraPermission(cameraPermission.status === "granted")
-            setHasMediaLibraryPermission(mediaLibraryPermission.status === "granted")
+            MediaLibrary.requestPermissionsAsync();
+            const cameraStatus = await Camera.requestCameraPermissionsAsync();
+            setHasCameraPermission(cameraStatus == 'granted')
         })();
     }, [])
 
-    if (hasCameraPermission === undefined) {
-        return <Text>Requesting permissions...</Text>
-    } else if (!hasCameraPermission) {
-        return <Text>Permission for camera not granted. Please change in settings</Text>
-    }
 
-    const onCameraReady = () => {
-        setIsCameraReady(true);
+    const submitToGoogle = async () => {
+        try {
+            let body = JSON.stringify({
+                requests: [
+                    {
+                        features: [
+                            // { type: 'LABEL_DETECTION', maxResults: 10 },
+                            // { type: 'TEXT_DETECTION', maxResults: 2 },
+                            { type: 'DOCUMENT_TEXT_DETECTION', maxResults: 5 },
+                        ],
+                        image: {
+
+                            "content": image.base64
+                        }
+                    }
+                ]
+            });
+            let response = await fetch(
+                'https://vision.googleapis.com/v1/images:annotate?key=' + API_KEY,
+                {
+                    headers: {
+                        Accept: 'application/json',
+                        'Content-Type': 'application/json'
+
+                    },
+                    method: 'POST',
+                    body: body
+                }
+            );
+            let responseJson = await response.json();
+            const code = responseJson.responses[0].fullTextAnnotation.text;
+            toIdeScreen(code)
+
+            // setGoogleResponse(responseJson)
+            // console.log(googleResponse)
+        } catch (error) {
+
+            console.log("Error:" + error);
+        }
     };
 
-    let takePic = async () => {
-        let options = {
-            quality: 1,
-            base64: true,
-            exif: false
-        }
-        console.log(cameraRef.current)
+
+    const toIdeScreen = (data) => {
+        navigation.navigate('IDE', { code: data })
+    }
+
+    const takePicture = async () => {
         if (cameraRef) {
-            let newPhoto = await cameraRef.current.takePictureAync(options)
-            setPhoto(newPhoto)
+            try {
+                const options = { quality: 0.5, base64: true };
+                const data = await cameraRef.current.takePictureAsync(options);
+                console.log(data)
+                setImage(data)
+            } catch (e) {
+                console.log(e)
+            }
         }
     }
 
-    if (photo) {
-        let sharePic = () => {
-            shareAsync(photo.uri).then(() => {
-                setPhoto(undefined)
-            })
-        }
-
-        let savePhoto = () => {
-            MediaLibrary.saveToLibraryAsync(photo.uri).then(() => {
-                setPhoto(undefined)
-            })
-        }
-
-        return (
-            <SafeAreaView style={styles.container}>
-                <Image style={styles.preview} source={{ uri: "data:image/jpg;base64," + photo.base64 }} />
-                <Button title="Share" onPress={sharePic} />
-                {hasMediaLibraryPermission ? <Button title="Save" onPress={savePhoto} /> : undefined}
-                <Button title='Discard' onPress={() => setPhoto(undefined)} />
-            </SafeAreaView>
-        )
-    }
+    // if (hasCameraPermission == false) {
+    //     return (<Text>Permission to access camera not granted</Text>)
+    // }
 
     return (
-        <Camera style={styles.container} ref={cameraRef} ratio={"16:9"} zoom={zoom} onCameraReady={onCameraReady}>
-            <View style={styles.butttonContainer}>
-                <Button title="Take Pic" onPress={takePic} />
-                <Button title="Zoom in" onPress={() => { if (zoom <= 0.9) setZoom(zoom + 0.1) }} />
-                <Button title="Zoom out" onPress={() => { if (zoom >= 0.1) setZoom(zoom - 0.1) }} />
+        <View style={styles.container}>
+            {!image ?
+                <Camera
+                    style={styles.camera}
+                    type={type}
+                    flashMode={flash}
+                    ref={cameraRef}
+                    ratio='16:9'
+                >
+                    <View style={{
+                        alignItems: 'flex-start',
+                        paddingTop: 30,
+                        paddingHorizontal: 20
 
+                    }}>
+                        <Button icon={'flash'}
+                            color={flash === Camera.Constants.FlashMode.off ? '#f1f1f1' : 'gold'}
+                            onPress={() => {
+                                setFlash(flash === Camera.Constants.FlashMode.off ?
+                                    Camera.Constants.FlashMode.on
+                                    : Camera.Constants.FlashMode.off
+                                )
+                            }} />
+                    </View>
+                </Camera>
+                :
+                <Image source={{ uri: image.uri }} style={styles.camera} />
+            }
+            <View>
+                {image ?
+                    <View style={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        paddingHorizontal: 50
+                    }}>
+                        <Button title={"Re-Take"} icon="retweet" onPress={() => setImage(null)} />
+                        <Button title={"Save"} icon="check" onPress={submitToGoogle} />
+
+                    </View>
+                    :
+                    <Button title={'Take a Picture'} icon="camera" onPress={takePicture} />
+                }
             </View>
-        </Camera>
+        </View>
     )
 }
 
@@ -86,16 +138,10 @@ export default PhotoScreen
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        alignItems: 'center',
+        backgroundColor: '#000',
         justifyContent: 'center'
     },
-    butttonContainer: {
-        backgroundColor: '#fff',
-        alignSelf: 'flex-end'
-        // position: 'bottom'
-    },
-    preview: {
-        alignSelf: 'stretch',
-        flex: 1
+    camera: {
+        flex: 1,
     }
 })

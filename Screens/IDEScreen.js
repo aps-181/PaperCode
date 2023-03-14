@@ -9,9 +9,12 @@ import CodeEditor, { CodeEditorSyntaxStyles } from '../src';
 import { useSelector } from 'react-redux';
 import { selectLang } from '../slices/langSlices';
 
-const IDEScreen = () => {
+const IDEScreen = ({ route, navigation }) => {
 
     const lang = useSelector(selectLang)
+    const { code } = route.params
+
+    const dummy = "How are you today\nHow are you"
 
     return (
         <SafeAreaView>
@@ -25,6 +28,7 @@ const IDEScreen = () => {
                 language={lang.value}
                 syntaxStyle={CodeEditorSyntaxStyles.atomOneDark}
                 showLineNumbers
+                initialValue={code}
                 autoFocus
             />
         </SafeAreaView>
