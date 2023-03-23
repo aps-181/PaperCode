@@ -11,6 +11,7 @@ const PhotoScreen = ({ navigation }) => {
     const [image, setImage] = useState(null)
     const [type, setType] = useState(Camera.Constants.Type.back)
     const [flash, setFlash] = useState(Camera.Constants.FlashMode.off)
+    const [updateImage, setUpdateImage] = useState(null)
     const cameraRef = useRef(null)
 
     useEffect(() => {
@@ -20,6 +21,34 @@ const PhotoScreen = ({ navigation }) => {
             setHasCameraPermission(cameraStatus == 'granted')
         })();
     }, [])
+
+    const gammaCorrection = async () => {
+
+        try {
+            let response = await fetch('https://mdl16.pythonanywhere.com/gammacorrection', {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ image: image.base64 })
+            })
+                .then(res => {
+                    return res.json()
+                })
+                .then(
+                    (result) => {
+                        setUpdateImage(result['data'])
+                        submitToGoogle()
+                    },
+                    (error) => {
+                        console.log(error)
+                    }
+                )
+        } catch (e) {
+            console.log(e)
+        }
+    }
+
 
 
     const submitToGoogle = async () => {
@@ -34,7 +63,7 @@ const PhotoScreen = ({ navigation }) => {
                         ],
                         image: {
 
-                            "content": image.base64
+                            "content": updateImage
                         }
                     }
                 ]
@@ -52,6 +81,7 @@ const PhotoScreen = ({ navigation }) => {
                 }
             );
             let responseJson = await response.json();
+            console.log(responseJson.responses[0].fullTextAnnotation.text)
             const code = responseJson.responses[0].fullTextAnnotation.text;
             toIdeScreen(code)
 
@@ -73,7 +103,7 @@ const PhotoScreen = ({ navigation }) => {
             try {
                 const options = { quality: 0.5, base64: true };
                 const data = await cameraRef.current.takePictureAsync(options);
-                console.log(data)
+                // console.log(data.base64)
                 setImage(data)
             } catch (e) {
                 console.log(e)
@@ -122,7 +152,7 @@ const PhotoScreen = ({ navigation }) => {
                         paddingHorizontal: 50
                     }}>
                         <Button title={"Re-Take"} icon="retweet" onPress={() => setImage(null)} />
-                        <Button title={"Save"} icon="check" onPress={submitToGoogle} />
+                        <Button title={"Save"} icon="check" onPress={gammaCorrection} />
 
                     </View>
                     :
