@@ -1,10 +1,15 @@
 import React, { useEffect, useImperativeHandle, useRef, useState } from 'react';
 import {
+    Button,
+    Modal,
     View,
+    SafeAreaView,
     TextInput,
+    Text,
     ScrollView,
     StyleSheet,
     Platform,
+    Pressable,
     ColorValue,
     NativeSyntheticEvent,
     TextInputScrollEventData,
@@ -19,6 +24,12 @@ import { Languages } from './languages';
 import * as Braces from './braces';
 import * as Indentation from './indentation';
 import * as Strings from './strings';
+import { Dropdown } from 'react-native-element-dropdown';
+import { shareAsync } from 'expo-sharing'
+import * as FileSystem from 'expo-file-system';
+import compileCode from '../Components/compileCode';
+import { useDispatch, useSelector } from 'react-redux';
+import { setOutput, } from '../slices/langSlices';
 
 export type CodeEditorStyleType = SyntaxHighlighterStyleType & {
     /**
@@ -154,6 +165,15 @@ const CodeEditor = (props: PropsWithForwardRef): JSX.Element => {
     const highlighterRef = useRef<ScrollView>(null);
     const inputRef = useRef<TextInput>(null);
     const inputSelection = useRef<TextInputSelectionType>({ start: 0, end: 0 });
+    const [codeLanguage, setCodeLanguage] = useState<string | undefined>('')
+    const [showModal, setShowModal] = useState<boolean>(false)
+    const [fileName, setFileName] = useState<string>('')
+
+
+
+
+    const dispatch = useDispatch()
+
 
     // Only when line numbers are showing
     const lineNumbersPadding = showLineNumbers ? 1.75 * fontSize : undefined;
@@ -243,48 +263,164 @@ const CodeEditor = (props: PropsWithForwardRef): JSX.Element => {
         inputSelection.current = e.nativeEvent.selection;
     };
 
+    const compile = async () => {
+        const res = await compileCode(value, codeLanguage)
+        console.log(res)
+        dispatch(setOutput(res))
+    }
+
+    const saveFile = async (uri: string, filename: string, mimetype: string) => {
+        if (Platform.OS === "android") {
+            const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync()
+            if (permissions.granted) {
+                const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 })
+                await FileSystem.StorageAccessFramework.createFileAsync(permissions.directoryUri, filename, mimetype)
+                    .then(async (uri) => {
+                        await FileSystem.writeAsStringAsync(uri, base64, { encoding: FileSystem.EncodingType.Base64 })
+                    })
+                    .catch(e => console.log(e))
+            } else {
+                shareAsync(uri)
+            }
+            console.log('Done saving')
+        } else {
+            shareAsync(uri)
+        }
+    }
+
+    const makeFile = async () => {
+        // console.log(fileName)
+
+        let fileUri = FileSystem.documentDirectory + fileName;
+        await FileSystem.writeAsStringAsync(fileUri, value, { encoding: FileSystem.EncodingType.UTF8 });
+        saveFile(fileUri, fileName, "text/plain")
+    }
+    const getFileName = () => {
+        setShowModal(true);
+    }
+
+
+    const data = [
+        { label: 'Python', value: 'python' },
+        { label: 'Javascript', value: 'javascript' },
+        { label: 'Java', value: 'java' },
+        { label: 'C', value: 'c' },
+        { label: 'C++', value: 'cpp' },
+    ];
+
     return (
-        <View style={{ width, height, marginTop, marginBottom }} testID={testID}>
-            <SyntaxHighlighter
-                language={language}
-                addedStyle={addedStyle}
-                syntaxStyle={syntaxStyle}
-                scrollEnabled={false}
-                showLineNumbers={showLineNumbers}
-                testID={`${testID}-syntax-highlighter`}
-                ref={highlighterRef}
-            >
-                {value}
-            </SyntaxHighlighter>
-            <TextInput
-                style={[
-                    styles.input,
-                    {
-                        lineHeight: inputLineHeight,
-                        color: inputColor,
-                        fontFamily: fontFamily,
-                        fontSize: fontSize,
-                        padding,
-                        paddingTop: padding,
-                        paddingLeft: lineNumbersPadding,
-                    },
-                ]}
-                value={value}
-                onChangeText={handleChangeText}
-                onScroll={handleScroll}
-                onKeyPress={handleKeyPress}
-                onSelectionChange={handleSelectionChange}
-                autoCapitalize="none"
-                autoComplete="off"
-                autoCorrect={false}
-                autoFocus={autoFocus}
-                // keyboardType="ascii-capable"
-                editable={!readOnly}
-                testID={`${testID}-text-input`}
-                // ref={inputRef}
-                multiline
-            />
-        </View>
+        <SafeAreaView>
+            <View style={{ flexDirection: 'row', justifyContent: "space-between" }}>
+                <Dropdown
+                    style={styles.dropdown}
+                    placeholderStyle={styles.placeholderStyle}
+                    selectedTextStyle={styles.selectedTextStyle}
+                    inputSearchStyle={styles.inputSearchStyle}
+                    iconStyle={styles.iconStyle}
+                    data={data}
+                    search
+                    maxHeight={300}
+                    labelField="label"
+                    valueField="value"
+                    placeholder="Select Language"
+                    searchPlaceholder="Search..."
+                    value={codeLanguage}
+                    onChange={item => {
+                        setCodeLanguage(item.value)
+                        // console.log(item)
+                    }}
+                // renderLeftIcon={() => (
+                //   // <AntDesign style={styles.icon} color="black" name="Safety" size={20} />
+                //   <Text>Language</Text>
+                // )}
+                />
+
+                <View style={{
+                    marginBottom: 5,
+                }}>
+                    <Button
+                        title="Save"
+                        onPress={getFileName}
+                    />
+                </View>
+                <View style={{
+                    marginBottom: 5,
+                    marginRight: 10
+                }}>
+                    <Button
+                        title="Run"
+                        onPress={compile}
+                    />
+                </View>
+            </View>
+            <View style={{ width, height, marginTop, marginBottom }} testID={testID}>
+
+                <SyntaxHighlighter
+                    language={codeLanguage}
+                    addedStyle={addedStyle}
+                    syntaxStyle={syntaxStyle}
+                    scrollEnabled={true}
+                    showLineNumbers={showLineNumbers}
+                    testID={`${testID}-syntax-highlighter`}
+                    ref={highlighterRef}
+                >
+                    {value}
+                </SyntaxHighlighter>
+                <TextInput
+                    style={[
+                        styles.input,
+                        {
+                            lineHeight: inputLineHeight,
+                            color: inputColor,
+                            fontFamily: fontFamily,
+                            fontSize: fontSize,
+                            padding,
+                            paddingTop: padding,
+                            paddingLeft: lineNumbersPadding,
+                        },
+                    ]}
+                    value={value}
+                    onChangeText={handleChangeText}
+                    onScroll={handleScroll}
+                    onKeyPress={handleKeyPress}
+                    onSelectionChange={handleSelectionChange}
+                    autoCapitalize="none"
+                    autoComplete="off"
+                    autoCorrect={false}
+                    autoFocus={autoFocus}
+                    // keyboardType="ascii-capable"
+                    editable={!readOnly}
+                    testID={`${testID}-text-input`}
+                    // ref={inputRef}
+                    multiline
+                />
+            </View>
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={showModal}
+                onRequestClose={() => {
+                    setShowModal(!showModal);
+                }}>
+                <View style={styles.centeredView}>
+                    <View style={styles.modalView}>
+                        <Text style={styles.modalText}>Enter file name</Text>
+                        <TextInput
+                            style={styles.input}
+                            onChangeText={fname => setFileName(fname)}
+                        ></TextInput>
+                        <Pressable
+                            style={[styles.button, styles.buttonClose]}
+                            onPress={() => {
+                                setShowModal(!showModal)
+                                if (fileName.trim() !== "") makeFile()
+                            }}>
+                            <Text style={styles.textStyle}>Done</Text>
+                        </Pressable>
+                    </View>
+                </View>
+            </Modal>
+        </SafeAreaView>
     );
 };
 
@@ -302,5 +438,87 @@ const styles = StyleSheet.create({
         bottom: 0,
         left: 0,
         textAlignVertical: 'top',
+    },
+    dropdown: {
+        marginBottom: 5,
+        marginHorizontal: 16,
+        height: 15,
+        width: '40%',
+        borderBottomColor: 'gray',
+        borderBottomWidth: 0.5,
+    },
+    icon: {
+        marginRight: 5,
+    },
+    placeholderStyle: {
+        fontSize: 16,
+    },
+    selectedTextStyle: {
+        fontSize: 22,
+        marginBottom: 7
+    },
+    iconStyle: {
+        width: 20,
+        height: 20,
+    },
+    inputSearchStyle: {
+        height: 40,
+        fontSize: 16,
+    },
+    centeredView: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 22,
+    },
+    modalView: {
+        margin: 20,
+        backgroundColor: 'white',
+        borderRadius: 20,
+        padding: 35,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 5,
+    },
+    button: {
+        borderRadius: 5,
+        width: 100,
+        padding: 10,
+        elevation: 2,
+    },
+    buttonOpen: {
+        backgroundColor: '#F194FF',
+    },
+    buttonClose: {
+        backgroundColor: '#2196F3',
+    },
+    textStyle: {
+        color: 'white',
+        fontWeight: 'bold',
+        textAlign: 'center',
+    },
+    modalText: {
+        marginBottom: 15,
+        textAlign: 'center',
+    },
+    modalInput: {
+        height: 40,
+        width: 200,
+        margin: 12,
+        borderWidth: 1,
+        padding: 10,
+    },
+    codeInput: {
+        height: 200,
+        width: 200,
+        margin: 12,
+        borderWidth: 1,
+        padding: 10,
     },
 });

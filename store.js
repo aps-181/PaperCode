@@ -1,7 +1,7 @@
 import { configureStore } from '@reduxjs/toolkit'
-import langReducer from './slices/langSlices'
+import codeReducer from './slices/langSlices'
 export const store = configureStore({
     reducer: {
-        curLang: langReducer,
+        curCode: codeReducer,
     },
 })

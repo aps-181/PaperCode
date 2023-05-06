@@ -4,6 +4,8 @@ import { Camera, CameraType } from 'expo-camera';
 import * as MediaLibrary from 'expo-media-library'
 import Button from '../Components/Button';
 import { API_KEY } from '@env';
+import { useDispatch } from 'react-redux';
+import { setCode } from '../slices/langSlices';
 
 const PhotoScreen = ({ navigation }) => {
 
@@ -13,6 +15,8 @@ const PhotoScreen = ({ navigation }) => {
     const [flash, setFlash] = useState(Camera.Constants.FlashMode.off)
     const [updateImage, setUpdateImage] = useState(null)
     const cameraRef = useRef(null)
+    const dispatch = useDispatch()
+
 
     useEffect(() => {
         (async () => {
@@ -38,7 +42,7 @@ const PhotoScreen = ({ navigation }) => {
                 .then(
                     (result) => {
                         setUpdateImage(result['data'])
-                        submitToGoogle()
+                        // submitToGoogle(updateImage)
                     },
                     (error) => {
                         console.log(error)
@@ -63,7 +67,7 @@ const PhotoScreen = ({ navigation }) => {
                         ],
                         image: {
 
-                            "content": updateImage
+                            "content": image.base64
                         }
                     }
                 ]
@@ -81,6 +85,8 @@ const PhotoScreen = ({ navigation }) => {
                 }
             );
             let responseJson = await response.json();
+            // console.log(responseJson)
+            if (!responseJson.responses[0]) submitToGoogle(image)
             console.log(responseJson.responses[0].fullTextAnnotation.text)
             const code = responseJson.responses[0].fullTextAnnotation.text;
             toIdeScreen(code)
@@ -95,7 +101,8 @@ const PhotoScreen = ({ navigation }) => {
 
 
     const toIdeScreen = (data) => {
-        navigation.navigate('IDE', { code: data })
+        dispatch(setCode({ data }))
+        navigation.navigate('IDE')
     }
 
     const takePicture = async () => {
@@ -152,7 +159,7 @@ const PhotoScreen = ({ navigation }) => {
                         paddingHorizontal: 50
                     }}>
                         <Button title={"Re-Take"} icon="retweet" onPress={() => setImage(null)} />
-                        <Button title={"Save"} icon="check" onPress={gammaCorrection} />
+                        <Button title={"Save"} icon="check" onPress={submitToGoogle} />
 
                     </View>
                     :

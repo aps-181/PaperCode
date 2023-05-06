@@ -3,16 +3,22 @@ import React from 'react'
 import tw from 'twrnc'
 import { Icon } from 'react-native-elements'
 import { useNavigation } from '@react-navigation/native';
+import * as FileSystem from 'expo-file-system';
+import * as DocumentPicker from 'expo-document-picker';
+import { useDispatch } from 'react-redux';
+import { setCode } from '../slices/langSlices';
+
+//pickfile function is called here
 
 const data = [
     {
-        id: "123",
+        id: "1",
         title: "New Code",
         image: "https://res.cloudinary.com/djsyh5syl/image/upload/v1677130413/MainProjecr-PaperCode/camera_vodai4.png",
         screen: "PhotoScreen"
     },
     {
-        id: "124",
+        id: "2",
         title: "Code Storage",
         image: "https://res.cloudinary.com/djsyh5syl/image/upload/v1677130424/MainProjecr-PaperCode/folder_j9gcxl.png",
         screen: "IDE"
@@ -23,6 +29,21 @@ const data = [
 const NavOptions = () => {
 
     const navigation = useNavigation()
+    const dispatch = useDispatch()
+
+
+
+
+    const pickFile = async () => {
+        const result = await DocumentPicker.getDocumentAsync();
+        if (result.type == "success") {
+            let fname = result.name
+            let data = await FileSystem.readAsStringAsync(result.uri)
+            dispatch(setCode({ data }))
+            // console.log(res)
+            // return res
+        }
+    }
 
     return (
         <View style={styles.centered}>
@@ -34,7 +55,13 @@ const NavOptions = () => {
                 renderItem={({ item }) => (
                     <TouchableOpacity
                         style={[tw`bg-white w-48  rounded-lg mt-12`]}
-                        onPress={() => navigation.navigate(item.screen)}
+                        onPress={async () => {
+                            if (item.id == 2) {
+                                //The pick file function is called when code storage(id = 2) is pressed
+                                await pickFile()
+                            }
+                            navigation.navigate(item.screen)
+                        }}
                     >
                         <View>
                             <Image

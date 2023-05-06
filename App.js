@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import HomeScreen from './Screens/HomeScreen';
 import IDEScreen from './Screens/IDEScreen';
+import IDEHome from './IDEHome';
 import PhotoScreen from './Screens/PhotoScreen';
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { NavigationContainer } from '@react-navigation/native';
@@ -23,9 +24,10 @@ export default function App() {
                 headerShown: false,
               }}
             />
+
             <Stack.Screen
               name='IDE'
-              component={IDEScreen}
+              component={IDEHome}
             // options={{
             //   headerShown: false,
             // }}
@@ -52,5 +54,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   }
 });
+
 
 

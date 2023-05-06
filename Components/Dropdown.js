@@ -3,7 +3,7 @@ import { StyleSheet, Text } from 'react-native';
 import { Dropdown } from 'react-native-element-dropdown';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import { useDispatch } from 'react-redux';
-import { setLang } from '../slices/langSlices';
+// import { setLang } from '../slices/langSlices';
 
 const data = [
   { label: 'Python', value: 'python' },
@@ -35,10 +35,10 @@ const DropdownComponent = () => {
       placeholder="Select Language"
       searchPlaceholder="Search..."
       value={value}
-      onChange={item => {
-        setValue(item.value);
-        dispatch(setLang({ value }))
-      }}
+    // onChange={item => {
+    //   setValue(item.value);
+    //   dispatch(setLang({ value }))
+    // }}
     // renderLeftIcon={() => (
     //   // <AntDesign style={styles.icon} color="black" name="Safety" size={20} />
     //   <Text>Language</Text>
@@ -47,13 +47,14 @@ const DropdownComponent = () => {
   );
 };
 
-export default DropdownComponent;
 
+export default DropdownComponent;
 const styles = StyleSheet.create({
   dropdown: {
     marginBottom: 5,
     marginHorizontal: 16,
     height: 15,
+    width: '40%',
     borderBottomColor: 'gray',
     borderBottomWidth: 0.5,
   },
