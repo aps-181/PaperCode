@@ -62,8 +62,8 @@ const PhotoScreen = ({ navigation }) => {
                     {
                         features: [
                             // { type: 'LABEL_DETECTION', maxResults: 10 },
-                            // { type: 'TEXT_DETECTION', maxResults: 2 },
-                            { type: 'DOCUMENT_TEXT_DETECTION', maxResults: 5 },
+                            { type: 'TEXT_DETECTION', maxResults: 2 },
+                            // { type: 'DOCUMENT_TEXT_DETECTION', maxResults: 5 },
                         ],
                         image: {
 
