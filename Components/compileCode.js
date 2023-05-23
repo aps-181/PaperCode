@@ -16,7 +16,8 @@ const compileCode = async (code, language) => {
                 clientSecret: JDOODLE_CLIENT_SECRET,
                 script: code,
                 language: language,
-                versionIndex: "0"
+                versionIndex: "0",
+                stdin: ""
             })
         })
             .then(response => response.json())

@@ -310,7 +310,7 @@ const CodeEditor = (props: PropsWithForwardRef): JSX.Element => {
 
     return (
         <SafeAreaView>
-            <View style={{ flexDirection: 'row', justifyContent: "space-between" }}>
+            <View style={{ flexDirection: 'row', justifyContent: "space-between", marginTop: -15 }}>
                 <Dropdown
                     style={styles.dropdown}
                     placeholderStyle={styles.placeholderStyle}

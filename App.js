@@ -28,16 +28,17 @@ export default function App() {
             <Stack.Screen
               name='IDE'
               component={IDEHome}
-            // options={{
-            //   headerShown: false,
-            // }}
+              options={{
+                // headerShown: false,
+                title: ''
+              }}
             />
             <Stack.Screen
               name='PhotoScreen'
               component={PhotoScreen}
-            // options={{
-            //   headerShown: false,
-            // }}
+              options={{
+                title: '',
+              }}
             />
 
           </Stack.Navigator>
