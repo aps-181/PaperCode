@@ -1,17 +1,51 @@
-import { StyleSheet, Text, View, SafeAreaView, ScrollView } from 'react-native'
+import { StyleSheet, Text, View, SafeAreaView, ScrollView, Modal, Button } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { useSelector } from 'react-redux'
 import { selectOutput } from '../slices/langSlices'
-
+import ModalComponent from '../Components/ModalComponent'
 
 const ConsoleScreen = () => {
 
+    // const errorHints = []
+    const [errorHints, setErrorHints] = useState([])
+    const [showModal, setShowModal] = useState(false);
+    const [errorHintsStatus, setErrorHintsStatus] = useState('No hints to show')
+
+    const handleOpenModal = () => {
+        setShowModal(true);
+    };
+
+    const handleCloseModal = () => {
+        setShowModal(false);
+    };
 
 
 
     const result = useSelector(selectOutput)
-    const [errorHints, setErrorHints] = useState([])
     let output = "No output to be displayed"
+
+
+
+
+
+
+
+
+
+
+
+    async function handleError() {
+        console.log('Entering handleError')
+        setErrorHintsStatus('Searching for hints...')
+        await getErrorHints(output)
+            .then(() => {
+                console.log("reached handle error", errorHints.length)
+                setErrorHintsStatus('No hints to show')
+            })
+
+    }
+
+
 
     //convert output to individual error strings
     function breakString(inputString) {
@@ -52,63 +86,108 @@ const ConsoleScreen = () => {
                 return res.json()
             })
             .then((res) => {
-                console.log(res[0])
-                res.forEach((hint) => {
-                    let answer = hint.answer
-                    let question = hint.question
+                console.log(errorFound, '/n', res, '/n')
+                let temp = [...errorHints]
+
+                console.log('Before entering ', temp.length)
+                for (let i = 0; i < 4; i++) {
+                    let answer = res[i].answer
+                    let question = res[i].question
 
                     let newEntry = {
                         question: question,
                         answer: answer
                     }
-                    console.log(question)
-                    setErrorHints(arr => [...arr, newEntry])
-                })
+                    temp.push(newEntry)
+                    console.log('After each push:', temp.length, '/n')
+                }
+                console.log(temp)
+                console.log('After entering', temp.length)
+                setErrorHints(temp)
             })
     }
 
 
-    function getErrorHints(outputError) {
+    async function getErrorHints(outputError) {
         const errorArray = breakString(outputError);
-        errorArray.forEach(async err_str => {
+        for (let err_str of errorArray) {
+
             const errorFound = filterError(err_str)
             if (errorFound !== "no error") {
                 await callScrapper(errorFound)
             }
-        });
-
-        errorHints.forEach((hint) => {
-            console.log('Question: ', hint.question, '\n')
-        })
-
+        }
     }
+
+
 
     if (result != null) {
         if (result.statusCode == 200) {
             output = result.output
-            if (result.cpuTime == null) {
-                console.log('hi')
-                // getErrorHints(output)
-                console.log(errorHints.length)
-            }
         } else {
             output = result.error
         }
     }
+
     return (
-        <ScrollView style={{ marginTop: 30, marginHorizontal: 15 }}>
+        <View style={{ marginTop: 30, marginHorizontal: 15 }}>
+
             <Text>Output:{'\n'}</Text>
             <Text>{output}</Text>
-            {errorHints.map((hint) => {
-                <View>
-                    <Text>Q:{hint.question}{'\n'}</Text>
-                    <Text>Ans:{hint.answer}</Text>
+            {(result != null && result.cpuTime == null) && <Button title="Hints" onPress={handleOpenModal} />}
+
+
+            <Modal visible={showModal} animationType="slide" onRequestClose={handleCloseModal} transparent={true}>
+                <View style={styles.modalContainer}>
+
+                    <View style={styles.box}>
+                        <Button title="Get Hints" onPress={handleError} />
+                        <Button title="Clear" onPress={() => { setErrorHints([]) }} />
+
+                        <ScrollView>
+                            {errorHints.length > 0 && errorHints.map((hint, key) => {
+                                return (
+                                    <View key={key} style={{ padding: 10 }}>
+                                        <Text>Question: {hint.question}</Text>
+                                        <Text>Answer: {hint.answer}</Text>
+                                    </View>
+                                )
+                            })}
+                            {errorHints.length <= 0 && <Text style={styles.boxText}>{errorHintsStatus}</Text>}
+                        </ScrollView>
+                    </View>
+                    <Button title="Close" onPress={handleCloseModal} />
                 </View>
-            })}
-        </ScrollView>
+            </Modal>
+        </View>
     )
 }
 
 export default ConsoleScreen
 
-const styles = StyleSheet.create({})
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContainer: {
+
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    box: {
+        width: '90%',
+        height: '90%',
+        backgroundColor: 'white',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    boxText: {
+        color: 'black',
+        fontSize: 18,
+        fontWeight: 'bold',
+    },
+})

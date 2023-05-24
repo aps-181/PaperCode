@@ -404,9 +404,9 @@ const CodeEditor = (props: PropsWithForwardRef): JSX.Element => {
                 }}>
                 <View style={styles.centeredView}>
                     <View style={styles.modalView}>
-                        <Text style={styles.modalText}>Enter file name</Text>
                         <TextInput
-                            style={styles.input}
+                            placeholder='Enter file name'
+                            style={styles.modalInput}
                             onChangeText={fname => setFileName(fname)}
                         ></TextInput>
                         <Pressable
