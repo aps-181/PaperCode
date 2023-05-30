@@ -23,6 +23,7 @@ const compileCode = async (code, language) => {
             .then(response => response.json())
             .then(data => {
                 res = data
+                console.log(res)
             })
 
     } catch (e) {

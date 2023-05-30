@@ -165,11 +165,19 @@ const CodeEditor = (props: PropsWithForwardRef): JSX.Element => {
     const highlighterRef = useRef<ScrollView>(null);
     const inputRef = useRef<TextInput>(null);
     const inputSelection = useRef<TextInputSelectionType>({ start: 0, end: 0 });
-    const [codeLanguage, setCodeLanguage] = useState<string | undefined>('')
+    const [codeLanguage, setCodeLanguage] = useState<string | undefined>(language)
     const [showModal, setShowModal] = useState<boolean>(false)
     const [fileName, setFileName] = useState<string>('')
 
 
+    useEffect(() => {
+        for (let arr of data) {
+            if (arr.label === language) {
+                setCodeLanguage(arr.value)
+
+            }
+        }
+    }, [language])
 
 
     const dispatch = useDispatch()
@@ -322,10 +330,11 @@ const CodeEditor = (props: PropsWithForwardRef): JSX.Element => {
                     maxHeight={300}
                     labelField="label"
                     valueField="value"
-                    placeholder="Select Language"
+                    placeholder={language}
                     searchPlaceholder="Search..."
                     value={codeLanguage}
                     onChange={item => {
+                        console.log(codeLanguage)
                         setCodeLanguage(item.value)
                         // console.log(item)
                     }}

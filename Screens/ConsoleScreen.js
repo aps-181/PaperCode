@@ -36,13 +36,15 @@ const ConsoleScreen = () => {
 
     async function handleError() {
         console.log('Entering handleError')
-        setErrorHintsStatus('Searching for hints...')
-        await getErrorHints(output)
-            .then(() => {
-                console.log("reached handle error", errorHints.length)
-                setErrorHintsStatus('No hints to show')
-            })
+        if (output.length >= 5) {
 
+            setErrorHintsStatus('Searching for hints...')
+            await getErrorHints(output)
+                .then(() => {
+                    console.log("reached handle error", errorHints.length)
+                    setErrorHintsStatus('No hints to show')
+                })
+        }
     }
 
 
@@ -90,16 +92,18 @@ const ConsoleScreen = () => {
                 let temp = [...errorHints]
 
                 console.log('Before entering ', temp.length)
-                for (let i = 0; i < 4; i++) {
-                    let answer = res[i].answer
-                    let question = res[i].question
+                if (res.length > 0) {
+                    for (let i = 0; i < 4; i++) {
+                        let answer = res[i].answer
+                        let question = res[i].question
 
-                    let newEntry = {
-                        question: question,
-                        answer: answer
+                        let newEntry = {
+                            question: question,
+                            answer: answer
+                        }
+                        temp.push(newEntry)
+                        console.log('After each push:', temp.length, '/n')
                     }
-                    temp.push(newEntry)
-                    console.log('After each push:', temp.length, '/n')
                 }
                 console.log(temp)
                 console.log('After entering', temp.length)
@@ -141,9 +145,12 @@ const ConsoleScreen = () => {
                 <View style={styles.modalContainer}>
 
                     <View style={styles.box}>
-                        <Button title="Get Hints" onPress={handleError} />
-                        <Button title="Clear" onPress={() => { setErrorHints([]) }} />
-
+                        <View style={{ flexDirection: 'row', justifyContent: "space-between", marginVertical: 10 }}>
+                            <View style={{ marginRight: 50 }}>
+                                <Button title="Get Hints" onPress={handleError} />
+                            </View>
+                            <Button title="Clear" onPress={() => { setErrorHints([]) }} />
+                        </View>
                         <ScrollView>
                             {errorHints.length > 0 && errorHints.map((hint, key) => {
                                 return (
@@ -155,8 +162,8 @@ const ConsoleScreen = () => {
                             })}
                             {errorHints.length <= 0 && <Text style={styles.boxText}>{errorHintsStatus}</Text>}
                         </ScrollView>
+                        <Button title="Close" onPress={handleCloseModal} />
                     </View>
-                    <Button title="Close" onPress={handleCloseModal} />
                 </View>
             </Modal>
         </View>

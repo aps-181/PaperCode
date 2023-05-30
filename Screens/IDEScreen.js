@@ -2,7 +2,7 @@ import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import CodeEditor, { CodeEditorSyntaxStyles } from '../src';
 import { useSelector } from 'react-redux';
-
+import { useEffect, useState } from 'react';
 import { selectCode } from '../slices/langSlices';
 
 
@@ -12,10 +12,31 @@ import { selectCode } from '../slices/langSlices';
 
 const IDEScreen = ({ route, navigation }) => {
 
-
-
-
     const code = useSelector(selectCode).data
+    const [language, setLanguage] = useState('Select Language')
+
+
+    useEffect(() => {
+        try {
+            console.log(`https://71b2-45-249-170-88.ngrok-free.app/?code="${code}"`)
+            fetch(`https://a477-2405-201-f001-a082-4c22-40d6-dafb-44c6.ngrok-free.app/getLanguage`, {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ code: code })
+            })
+                .then(res => res.json())
+                .then((d) => {
+                    setLanguage(d["language"])
+                    console.log(d["language"])
+                })
+        } catch (error) {
+
+            console.log("Error:" + error);
+            setLanguage('c')
+        }
+    }, [])
 
     return (
         <SafeAreaView>
@@ -26,7 +47,7 @@ const IDEScreen = ({ route, navigation }) => {
                     inputLineHeight: 22,
                     highlighterLineHeight: 22,
                 }}
-                language={'javascript'}
+                language={language}
                 syntaxStyle={CodeEditorSyntaxStyles.atomOneDark}
                 showLineNumbers
                 initialValue={code}
